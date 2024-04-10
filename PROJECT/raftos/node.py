@@ -2,7 +2,7 @@ import raftos
 import asyncio
 import argparse
 
-PORTS = [8000, 8001, 8002, 8003, 8004]  # Updated for 5 nodes
+PORTS = [8000, 8001, 8002]
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--node')
@@ -14,7 +14,7 @@ PORT = PORTS[NODE_ID-1]
 NODE_LOGFILE = f'node{NODE_ID}_CUSTOMLOG.log'
 # Since this is run for each 'node', we're telling this node
 # what ports the other nodes are running on.
-other_nodes_ports = [p for p in PORTS if p != PORT]
+other_nodes_ports = [p for p in [8000, 8001, 8002] if p != PORT]
 
 raftos.configure({
     'log_path': './',
@@ -33,7 +33,8 @@ loop.create_task(
         # Telling raft which ones are 
         # part of this node's cluster
         cluster=[
-            f'127.0.0.1:{port}' for port in other_nodes_ports
+            f'127.0.0.1:{other_nodes_ports[0]}',
+            f'127.0.0.1:{other_nodes_ports[1]}'
         ]
     )
 )
@@ -44,7 +45,7 @@ with open(NODE_LOGFILE, 'w') as log_file:
 async def run(loop):
     VARIABLE = raftos.Replicated(name='VARIABLE')
 
-    # Non leaders get stuck in this loop!
+    # Non leaders get suck in this loop!
     old_leader = None
     while raftos.get_leader() != this_node_address:
 
@@ -66,18 +67,18 @@ async def run(loop):
         # the variable 'VARIABLE' to something specific
 
         # This specific code initially sets the value to
-        # 'New Initial Value' if it hasn't been set before,
+        # 'PES2UG20CS182' if it hasn't been set before,
         # and to the next value once the next leader enters
-        # this block of code and realizes that the value
+        # this block of code and realises that the value
         # has already been set before
         try:
             old_value = await VARIABLE.get()
             if old_value is not None:
-                await VARIABLE.set('Next Value')
+                await VARIABLE.set('HashCode')
             else:
-                await VARIABLE.set('New Initial Value') 
+                await VARIABLE.set('PES1UG21CS054') 
         except:
-            await VARIABLE.set('New Initial Value')
+            await VARIABLE.set('PES1UG21CS054')
 
         # Client Command executed;    
         log_file.write('Done writing VARIABLE\n Check the .log and .state_machine files!')
@@ -85,4 +86,3 @@ async def run(loop):
 
 loop.run_until_complete(run(loop))
 loop.run_forever()
-
